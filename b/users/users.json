@@ -1,0 +1,10 @@
+[
+  { "id": 1, "first_name": "Ola", "last_name": "Filipek", "tier": "A" },
+  { "id": 2, "first_name": "Ala", "last_name": "Tomaszek", "tier": "" },
+  { "id": 3, "first_name": "ela", "last_name": "nowak", "tier": "A" },
+  { "id": 4, "first_name": "ela", "last_name": "nowak", "tier": "B" },
+  { "id": 5, "first_name": "ela", "last_name": "nowak1", "tier": "B" },
+  { "id": 6, "first_name": "ela", "last_name": "nowak1", "tier": "A" },
+  { "id": 7, "first_name": "ela", "last_name": "nowak2", "tier": "B" },
+  { "id": 8, "first_name": "Pola", "last_name": "Raksa", "tier": "C" }
+]
