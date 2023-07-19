@@ -1,4 +1,4 @@
-class Newest {
+class NewestHandler {
   static handle(...items) {
     let newestItem = null;
     items.forEach(item => {
@@ -10,4 +10,4 @@ class Newest {
   }
 }
 
-module.exports = Newest;
+module.exports = NewestHandler;

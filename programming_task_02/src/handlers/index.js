@@ -1,17 +1,20 @@
-const Counter = require("./counter");
-const Newest = require("./newest");
+const CounterHandler = require("./counter");
+const NewestHandler = require("./newest");
+const AuthorizeHandler = require("./authorize");
 
-// Define your other custom handlers here (if any)
-
-function handle(action, actionData) {
-  switch (action.handler) {
-    case "COUNTER":
-      return Counter.handle(actionData);
-    case "NEWEST":
-      return Newest.handle(...actionData);
-    default:
-      throw new Error(`Handler "${action.handler}" is not defined.`);
+class Handler {
+  static from(handlerName) {
+    switch (handlerName) {
+      case "COUNTER":
+        return CounterHandler;
+      case "NEWEST":
+        return NewestHandler;
+      case "AUTHORIZE":
+        return AuthorizeHandler;
+      default:
+        throw new Error(`Handler "${handlerName}" is not defined.`);
+    }
   }
 }
 
-module.exports = { handle };
+module.exports = Handler;

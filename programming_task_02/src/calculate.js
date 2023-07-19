@@ -1,4 +1,8 @@
-function performCalculation(action, actionData, handlers, actionDataCache = {}) {
+const { dbClient, TableNames } = require("./common/db");
+const Action = require("./model/action");
+const Handler = require("./handlers/index");
+
+async function performCalculation(action, actionData, handlers, actionDataCache = {}) {
   if (!action) {
     throw new Error("Action not found.");
   }
@@ -20,21 +24,28 @@ function performCalculation(action, actionData, handlers, actionDataCache = {}) 
   }
 
   if (action.children && action.children.length > 0) {
-    const childResults = action.children.map(childAction => {
-      if (actionDataCache[childAction.id]) {
-        return actionDataCache[childAction.id];
-      }
+    const childResults = await Promise.all(
+      action.children.map(async (childAction) => {
+        if (actionDataCache[childAction.id]) {
+          return actionDataCache[childAction.id];
+        }
 
-      const childActionData = performCalculation(childAction, actionData, handlers, actionDataCache);
+        const childActionData = await performCalculation(
+          childAction,
+          actionData,
+          handlers,
+          actionDataCache
+        );
 
-      const childActionHandler = handlers[childAction.handler];
-      const childResult = childActionHandler.handle(childActionData);
-      actionDataCache[childAction.id] = childResult;
+        const childActionHandler = handlers[childAction.handler];
+        const childResult = childActionHandler.handle(...childActionData);
+        actionDataCache[childAction.id] = childResult;
 
-      return childResult;
-    });
+        return childResult;
+      })
+    );
 
-    return action.handler(childResults);
+    return actionData;
   }
 
   const handler = handlers[action.handler];
@@ -43,10 +54,10 @@ function performCalculation(action, actionData, handlers, actionDataCache = {}) 
   return result;
 }
 
-function calculate(actionId, actions, handlers) {
-  const requestedAction = actions.find(action => action.id === actionId);
+async function calculate(actionId) {
+  const requestedAction = await Action.getById(actionId);
 
-  const result = performCalculation(requestedAction, null, handlers);
+  const result = await performCalculation(requestedAction, null, Handler);
 
   return result;
 }

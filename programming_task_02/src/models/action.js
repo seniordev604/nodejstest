@@ -1,6 +1,6 @@
-const Role = require("./role");
 const { dbClient, TableNames } = require("../common/db");
 const Handler = require("../handlers/index");
+const Role = require("./role");
 
 class Action {
   id;
@@ -16,40 +16,47 @@ class Action {
   }
 
   static async getById(id) {
-    const res = await dbClient.get({ TableName: TableNames.AuthRule, Key: { pk: id } }).promise();
+    const res = (await dbClient.get({ TableName: TableNames.actions, Key: { pk: id } }).promise())
+      .Item;
 
-    if (!res.Item) {
+    if (!res) {
       throw new Error("Action does not exist");
     }
 
-    return new Action(res.Item);
+    return new Action(res);
   }
 
   async getParentAction() {
-    const res = await dbClient.get({ TableName: TableNames.Action, Key: { pk: this.parentActionId } }).promise();
+    const res = (
+      await dbClient.get({ TableName: TableNames.actions, Key: { pk: this.parentActionId } }).promise()
+    ).Item;
 
-    if (!res.Item) {
-      throw new Error("Rule does not exist");
+    if (!res) {
+      throw new Error("Parent Action does not exist");
     }
 
-    return new Action(res.Item);
+    return new Action(res);
   }
 
   async getChildActions() {
-    const res = await dbClient.query({
-      TableName: TableNames.Action,
-      IndexName: "parent-index",
-      KeyConditionExpression: "pk = :pk",
-      ExpressionAttributeValues: {
-        ":pk": this.parentActionId,
-      },
-    }).promise();
+    const res = (
+      await dbClient
+        .query({
+          TableName: TableNames.actions,
+          IndexName: "parent-index",
+          KeyConditionExpression: "parentActionId = :parentId",
+          ExpressionAttributeValues: {
+            ":parentId": this.id,
+          },
+        })
+        .promise()
+    ).Items;
 
-    if (!res.Items) {
-      throw new Error("Action does not exist");
+    if (!res) {
+      throw new Error("No child Actions found");
     }
 
-    return res.Items.map(item => new Action(item));
+    return res.map((item) => new Action(item));
   }
 }
 
