@@ -1,9 +1,8 @@
-import Role from "./role";
-
+const Role = require("./role");
 const { dbClient, TableNames } = require("../common/db");
 const Handler = require("../handlers/index");
 
-export class Action {
+class Action {
   id;
   parentActionId;
   role;
@@ -11,14 +10,13 @@ export class Action {
 
   constructor(input) {
     this.id = input.id;
-    this.parentRule = input.parentRule;
+    this.parentActionId = input.parentActionId;
     this.role = Role.from(input.role);
     this.handler = Handler.from(input.handler);
   }
 
   static async getById(id) {
-    const res = (await dbClient.get({ TableName: TableNames.AuthRule, Key: { pk: id } }).promise())
-      .Item;
+    const res = await dbClient.get({ TableName: TableNames.AuthRule, Key: { pk: id } }).promise();
 
     if (!res.Item) {
       throw new Error("Action does not exist");
@@ -28,9 +26,7 @@ export class Action {
   }
 
   async getParentAction() {
-    const res = (
-      await dbClient.get({ TableName: TableNames.Action, Key: { pk: this.parentRuleId } }).promise()
-    ).Item;
+    const res = await dbClient.get({ TableName: TableNames.Action, Key: { pk: this.parentActionId } }).promise();
 
     if (!res.Item) {
       throw new Error("Rule does not exist");
@@ -40,20 +36,21 @@ export class Action {
   }
 
   async getChildActions() {
-    const res = (
-      await dbClient
-        .query({
-          TableName: TableNames.Action,
-          IndexName: "parent-index",
-          Key: { pk: this.parentActionId },
-        })
-        .promise()
-    ).Items;
+    const res = await dbClient.query({
+      TableName: TableNames.Action,
+      IndexName: "parent-index",
+      KeyConditionExpression: "pk = :pk",
+      ExpressionAttributeValues: {
+        ":pk": this.parentActionId,
+      },
+    }).promise();
 
     if (!res.Items) {
       throw new Error("Action does not exist");
     }
 
-    return res.Items.map((item) => new Action(item));
+    return res.Items.map(item => new Action(item));
   }
 }
+
+module.exports = Action;

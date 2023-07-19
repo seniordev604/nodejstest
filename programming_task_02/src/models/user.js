@@ -11,8 +11,7 @@ class User {
   }
 
   static async getById(id) {
-    const res = (await dbClient.get({ TableName: TableNames.users, Key: { pk: id } }).promise())
-      .Item;
+    const res = await dbClient.get({ TableName: TableNames.users, Key: { pk: id } }).promise();
 
     if (!res.Item) {
       throw new Error("User does not exist");

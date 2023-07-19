@@ -1,13 +1,13 @@
-function newestHandler(actions) {
+class Newest {
+  static handle(...items) {
     let newestItem = null;
-  
-    actions.forEach(action => {
-      if (newestItem === null || action.timestamp > newestItem.timestamp) {
-        newestItem = action;
+    items.forEach(item => {
+      if (!newestItem || item.timestamp > newestItem.timestamp) {
+        newestItem = item;
       }
     });
-  
     return newestItem;
   }
-  
-  module.exports = newestHandler;
+}
+
+module.exports = Newest;

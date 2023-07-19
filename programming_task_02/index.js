@@ -1,37 +1,51 @@
-const authorize = require("./src/authorize.js");
-const calculate = require("./src/calculate.js");
-const actionsData = require("./data/actions.json");
-const handlers = {
-  newest: require("./src/handlers/newest.js"),
-  counter: require("./src/handlers/counter.js"),
-};
-// The event argument passed here:
-// {Headers: {userid: string}, body: string} - parsed body contains {actionid: string}
+const authorize = require("./src/authorize");
+const calculate = require("./src/calculate");
+const { DynamoDB } = require("aws-sdk");
 
-exports.handler = async function (event) {
-  const { Headers, body } = event;
-  const { userid } = Headers;
-  const { actionid } = JSON.parse(body);
+const dbClient = new DynamoDB.DocumentClient({
+  apiVersion: "2012-08-10",
+  region: "eu-west-1",
+  ...(process.env.MOCK_DYNAMODB_ENDPOINT && {
+    endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
+    sslEnabled: false,
+    region: "local",
+  }),
+});
 
-  const userRole = "SYS_ADMIN"; // Replace this with actual user role fetched from your authentication system
-  const requestedAction = actionsData.find(action => action.id === actionid);
+async function handler(event) {
+  try {
+    // Call the authorization function to check if the user is authorized to perform the action
+    const authResponse = await authorize(event);
 
-  if (!authorize.isAuthorized(userRole, requestedAction.role)) {
+    if (authResponse.statusCode !== 200) {
+      // If the user is not authorized, return the authorization response
+      return authResponse;
+    }
+
+    // If the user is authorized, proceed with calculating the result
+    const { Headers, body } = event;
+    const { actionid: actionId } = JSON.parse(body);
+
+    const actions = await dbClient.scan({ TableName: "actions" }).promise();
+
+    const handlers = {
+      COUNTER: require("./handlers/counter"),
+      NEWEST: require("./handlers/newest"),
+    };
+
+    const result = calculate(actionId, actions.Items, handlers);
+
     return {
-      statusCode: 403,
-      body: JSON.stringify({ message: "Unauthorized" }),
+      statusCode: 200,
+      body: JSON.stringify(result),
+    };
+  } catch (error) {
+    console.error("Error:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: "Internal server error" }),
     };
   }
+}
 
-  // TODO: Implement calculation logic
-  const result = calculate(actionid, actionsData, handlers);
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ result }),
-  };
-  return;
-};
-
-
-
+module.exports = { handler };
